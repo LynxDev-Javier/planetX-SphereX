@@ -7,6 +7,7 @@ IRSA: https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts
 import concurrent.futures
 import hashlib
 import http.client
+import json
 import os
 import time
 import warnings
@@ -16,12 +17,6 @@ import requests
 from astropy.io import fits
 from astropy.time import Time
 from astroquery.ipac.irsa import Irsa
-
-st.set_page_config(
-    page_title="SpectraScan | NASA Space Apps",
-    page_icon="🔭",
-    layout="wide"
-)
 
 BANDAS = ("D1", "D2", "D3", "D4", "D5", "D6")
 ERRORES_DE_RED = (OSError, http.client.HTTPException)  # incluye timeouts y errores HTTP de requests
@@ -45,12 +40,21 @@ def _a_fecha(mjd):
     return str(mjd)
 
 
-def buscar_observaciones(ra, dec, tam_deg=0.1, banda="D2", max_obs=40):
+def _ruta_lista(carpeta_cache, ra, dec, tam_deg, banda, max_obs):
+    """Archivo donde se guarda la lista de observaciones de una región."""
+    nombre = f"obs_{ra:.5f}_{dec:.5f}_{tam_deg:.4f}_{banda}_{max_obs}.json"
+    return os.path.join(carpeta_cache, nombre)
+
+
+def buscar_observaciones(ra, dec, tam_deg=0.1, banda="D2", max_obs=40, carpeta_cache="cache"):
     """Lista las observaciones SPHEREx que cubren (ra, dec), ordenadas por fecha.
 
     ra, dec y tam_deg van en grados; banda es el detector, de "D1" a "D6".
     Si hay más de max_obs observaciones, se eligen repartidas en el tiempo.
     Devuelve una lista de diccionarios: {"fecha": texto, "mjd": número, "url": recorte}.
+
+    La lista se guarda en `carpeta_cache`; si IRSA no responde y esa región ya se había
+    consultado, se usa la lista guardada (con un aviso) en vez de fallar.
     """
     if banda not in BANDAS:
         raise ValueError(f"banda debe ser una de {BANDAS}")
@@ -67,7 +71,15 @@ def buscar_observaciones(ra, dec, tam_deg=0.1, banda="D2", max_obs=40):
         AND p.energy_bandpassname = 'SPHEREx-{banda}'
     ORDER BY p.time_bounds_lower
     """
-    resultado = _con_reintentos(lambda: Irsa.query_tap(consulta))
+    guardada = _ruta_lista(carpeta_cache, ra, dec, tam_deg, banda, max_obs)
+    try:
+        resultado = _con_reintentos(lambda: Irsa.query_tap(consulta))
+    except Exception as error:
+        if os.path.exists(guardada):
+            warnings.warn(f"IRSA no respondió ({error!r}); se usa la lista guardada de esta región.")
+            with open(guardada, encoding="utf-8") as f:
+                return json.load(f)
+        raise
     tabla = resultado.to_table() if hasattr(resultado, "to_table") else resultado
     if len(tabla) == 0:
         return []
@@ -78,7 +90,11 @@ def buscar_observaciones(ra, dec, tam_deg=0.1, banda="D2", max_obs=40):
     if len(orden) > max_obs:
         elegidos = np.unique(np.linspace(0, len(orden) - 1, max_obs).round().astype(int))
         orden = orden[elegidos]
-    return [{"fecha": _a_fecha(mjd[i]), "mjd": float(mjd[i]), "url": urls[i]} for i in orden]
+    lista = [{"fecha": _a_fecha(mjd[i]), "mjd": float(mjd[i]), "url": urls[i]} for i in orden]
+    os.makedirs(carpeta_cache, exist_ok=True)
+    with open(guardada, "w", encoding="utf-8") as f:
+        json.dump(lista, f)
+    return lista
 
 
 def descargar(observaciones, carpeta="cache", hilos=6):
