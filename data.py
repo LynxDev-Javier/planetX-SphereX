@@ -17,6 +17,12 @@ from astropy.io import fits
 from astropy.time import Time
 from astroquery.ipac.irsa import Irsa
 
+st.set_page_config(
+    page_title="SpectraScan | NASA Space Apps",
+    page_icon="🔭",
+    layout="wide"
+)
+
 BANDAS = ("D1", "D2", "D3", "D4", "D5", "D6")
 ERRORES_DE_RED = (OSError, http.client.HTTPException)  # incluye timeouts y errores HTTP de requests
 
