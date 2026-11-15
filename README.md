@@ -91,13 +91,12 @@ cutouts, and verify that they download, align, and detect the moving object.
 We used AI as support for the code, as permitted by the organizers.
 
 - **The idea and scope** stem from the official "Planet X and SPHEREx" challenge and WiseView,
-  the reference provided by the organizers. TO DO: what design and science
-  decisions the team made.
+  the reference provided by the organizers.
 - **Planning:** the work plan, stages, and contracts between modules were
   drafted with Claude (Anthropic); the team reviewed and adapted them.
 - **Code:** Claude wrote reference examples for `animate.py`, `app.py`,
   `catalogs.py`, `detect.py`, `fake_data.py`, and `process.py`, and the versions of `data.py`,
   `process.py`, and the tests we used, based on the official IRSA tutorial.
  
-all code was reviewed, tested, and understood by the
-team before including it.
+All integrated modules were tested and validated:
+- The M101 observation run worked, with masked pixels and data-free corners.
