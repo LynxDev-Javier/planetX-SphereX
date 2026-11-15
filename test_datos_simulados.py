@@ -246,3 +246,97 @@ def test_app_con_cache_local_no_consulta_a_irsa(irsa_simulado):
     assert not at.exception
     assert not at.error
     assert len(irsa_simulado) == consultas_antes  # no se tocó IRSA
+
+
+def test_probar_objetivos_guarda_resultados_y_usa_la_cache(irsa_simulado, tmp_path, monkeypatch):
+    import probar_objetivos
+
+    salida = tmp_path / "res"
+    linea = probar_objetivos.probar("sim", "Simulado", RA, DEC, TAM_DEG, "D2", str(salida))
+    assert f"{N} cuadros" in linea
+    for nombre in ("sim_normal.gif", "sim_diferencia.gif", "sim_candidatos.csv", "sim_brillo.csv"):
+        assert (salida / nombre).stat().st_size > 0
+
+    # Con IRSA caído se sigue pudiendo usar lo ya guardado
+    def caido(consulta, **kwargs):
+        raise OSError("502 Proxy Error")
+
+    monkeypatch.setattr(data.Irsa, "query_tap", caido)
+    monkeypatch.setattr(data.time, "sleep", lambda s: None)
+    with pytest.warns(UserWarning):
+        linea2 = probar_objetivos.probar("sim", "Simulado", RA, DEC, TAM_DEG, "D2", str(salida))
+    assert f"{N} cuadros" in linea2
+
+
+def test_probar_objetivos_sin_datos_devuelve_1(tmp_path, monkeypatch):
+    import probar_objetivos
+
+    monkeypatch.chdir(tmp_path)
+
+    def caido(consulta, **kwargs):
+        raise OSError("502 Proxy Error")
+
+    monkeypatch.setattr(data.Irsa, "query_tap", caido)
+    monkeypatch.setattr(data.time, "sleep", lambda s: None)
+    salida = tmp_path / "res"
+    codigo = probar_objetivos.main(["wise0855", "--una", "--salida", str(salida)])
+    assert codigo == 1
+    assert "SIN DATOS" in (salida / "resumen.txt").read_text(encoding="utf-8")
+
+
+def test_listar_cache_limita_los_cuadros(irsa_simulado):
+    obs = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    data.descargar(obs, "cache")
+    rutas, fechas = data.listar_cache(RA, DEC, TAM_DEG, "D2", "cache", max_obs=3)
+    assert len(rutas) == 3
+    assert fechas == sorted(fechas)
+    assert len(data.listar_cache(RA, DEC, TAM_DEG, "D2", "cache", max_obs=50)[0]) == N
+
+
+def _app_con_cache_local_y_gaia(irsa_simulado):
+    import streamlit as st
+    from streamlit.testing.v1 import AppTest
+
+    st.cache_data.clear()
+    obs = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    data.descargar(obs, "cache")
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    at.slider[0].set_value(TAM_DEG)
+    next(c for c in at.checkbox if "caché local" in c.label).set_value(True)
+    next(c for c in at.checkbox if "Gaia" in c.label).set_value(True)
+    return at
+
+
+def test_app_con_gaia_que_falla_muestra_aviso(irsa_simulado, monkeypatch):
+    import catalogs
+
+    def sin_gaia(*args, **kwargs):
+        raise OSError("Gaia caído")
+
+    monkeypatch.setattr(catalogs, "estrellas_gaia", sin_gaia)
+    at = _app_con_cache_local_y_gaia(irsa_simulado)
+    at.run()
+    assert not at.exception
+    assert not at.error
+    assert any("Gaia" in w.value for w in at.warning)
+
+
+def test_app_con_gaia_consulta_una_sola_vez(irsa_simulado, monkeypatch):
+    import catalogs
+    import pandas as pd
+
+    llamadas = []
+
+    def falso_gaia(ra, dec, radio):
+        llamadas.append(1)
+        return pd.DataFrame({"ra": [RA + 0.001], "dec": [DEC + 0.001]})
+
+    monkeypatch.setattr(catalogs, "estrellas_gaia", falso_gaia)
+    at = _app_con_cache_local_y_gaia(irsa_simulado)
+    at.run()
+    assert not at.exception and not at.error and not at.warning
+    at.slider[1].set_value(300)  # cambiar un control no debe volver a consultar a Gaia
+    at.run()
+    assert not at.exception and not at.error
+    assert len(llamadas) == 1
