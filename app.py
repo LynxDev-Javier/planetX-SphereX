@@ -9,7 +9,11 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Objetos en movimiento con imágenes SPHEREx")
+st.title("🔭 LynxScope")
+st.caption(
+    "Objetos en movimiento con imágenes SPHEREx · Equipo Universales · NASA Space Apps 2026"
+)
+
 with st.sidebar:
     ra = st.number_input("RA (grados)", value=210.80227, format="%.5f")
     dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f")
@@ -23,21 +27,33 @@ with st.sidebar:
     reales = st.checkbox("Usar datos reales de IRSA", value=False)
     gaia = st.checkbox("Superponer estrellas de Gaia DR3 (solo datos reales)", value=False)
     colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
+    local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
+
+reales = reales or local  # la caché local también son datos reales
 
 
 @st.cache_data(show_spinner="Descargando y alineando imágenes...")
-def cargar(ra, dec, tam, banda, reales):
+def cargar(ra, dec, tam, banda, reales, local):
     if reales:
-        from data import buscar_observaciones, descargar
         from process import preparar_cuadros
-        obs = buscar_observaciones(ra, dec, tam, banda)
-        rutas, fechas = descargar(obs, "cache")
+        if local:
+            from data import listar_cache
+            rutas, fechas = listar_cache(ra, dec, tam, banda, "cache")
+            if not rutas:
+                raise ValueError(
+                    "No hay recortes en la carpeta cache para esa región y banda. "
+                    "Usa las mismas coordenadas y banda con las que se descargaron."
+                )
+        else:
+            from data import buscar_observaciones, descargar
+            obs = buscar_observaciones(ra, dec, tam, banda)
+            rutas, fechas = descargar(obs, "cache")
         return preparar_cuadros(rutas, ra, dec, tam, fechas)
     return cubo_sintetico()
 
 
 try:
-    cubo, fechas = cargar(ra, dec, tam, banda, reales)
+    cubo, fechas = cargar(ra, dec, tam, banda, reales, local)
 except Exception as error:
     st.error(f"No se pudieron cargar los datos: {error}")
     st.stop()
