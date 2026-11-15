@@ -1,4 +1,4 @@
-# |LynxScope| Planet X and SPHEREx Project (Team Universales)
+# LynxScope — Planet X and SPHEREx Project (Team Universales)
 
 Web application that animates SPHEREx telescope images of a region of the sky,
 based on given coordinates, to help detect objects that change position.
@@ -22,16 +22,19 @@ can spot it, without installing astronomical software.
   brightness range, and pixel value inversion.
 - Frame-by-frame view with the date and wavelength of each image.
 - "Difference" mode: subtracts static elements so only what changes stands out.
+- Colour mode (pixels with no data are shown in blue) and GIF download.
 - Candidate list (position per frame) exportable to CSV.
 - Overlay of known Gaia DR3 stars (with real data).
+- Local-cache mode: works with images already downloaded, without querying IRSA.
 - Demo mode with synthetic data, without an internet connection.
 
 ## How to use it
 
-You can try the application directly in your browser without installing anything via the **[live demo](https://lynxscope.space)** *(note: hosted permanently, though it may be taken down in the future for security or maintenance reasons; if offline, you can run it locally following the Installation steps below)*:
+You can try the application directly in your browser without installing anything via the **[live demo](https://lynxscope.space)** *(note: hosted on our own server; it may be taken down in the future for security or maintenance reasons. If it is offline, you can run it locally following the Installation steps below)*:
 
-1. Use IRSA and enter the coordinates, or leave the example ones (the M101 galaxy).
-2. Check "Use real IRSA data" to download the SPHEREx images.
+1. Enter the coordinates, or leave the example ones (the M101 galaxy).
+2. Check "Use real IRSA data" to download the SPHEREx images. If IRSA is not
+   responding, check "Use only the local cache" to use images already downloaded.
 3. In the "Animation" tab, watch how the region moves; in "Frame by frame", review
    each date.
 4. Switch to "Difference" mode so what moves stands out, and check the candidate
@@ -85,6 +88,10 @@ cutouts, and verify that they download, align, and detect the moving object.
   it still needs to be confirmed with Table 16 of the SPHEREx Explanatory Supplement.
 - The blink is a GIF that is regenerated every time a control is changed, so it takes a little while.
 - Object discovery is a visual aid: candidates must be manually reviewed.
+- Real-data mode depends on the IRSA service. When it is down, only regions that were
+  already downloaded (local cache) can be shown.
+- So far the tool has been run on real data of M101 only; testing on moving targets
+  (for example Barnard's Star or WISE 0855) is still pending.
 
 ## Use of AI
 
@@ -97,6 +104,46 @@ We used AI as support for the code, as permitted by the organizers.
 - **Code:** Claude wrote reference examples for `animate.py`, `app.py`,
   `catalogs.py`, `detect.py`, `fake_data.py`, and `process.py`, and the versions of `data.py`,
   `process.py`, and the tests we used, based on the official IRSA tutorial.
- 
-All integrated modules were tested and validated:
-- The M101 observation run worked, with masked pixels and data-free corners.
+
+**Testing:** the integrated modules were tested. The run on real IRSA data of M101 worked,
+with masked pixels and data-free corners.
+
+## Contributions
+
+**Lynx (GitHub: LynxDev-Javier)** — project lead and developer.
+
+- **Integration:** assembled the modules into a working application, adapted the
+  AI-written reference code to the project, and fixed the problems that came up
+  (for example, stray code in `data.py` that broke real-data loading).
+- **Testing with real data:** ran the tool against real SPHEREx images from IRSA
+  (M101), diagnosed the IRSA service outages, and built the offline "local cache"
+  workflow so the demo does not depend on IRSA being up.
+- **Web interface and branding:** customized the Streamlit interface, named the
+  project LynxScope and added the colour mode and GIF download.
+- **Server and deployment:** set up the Ubuntu server, registered the lynxscope.space
+  domain, and published the app over HTTPS through a Cloudflare Tunnel.
+- **Repository:** created and maintains the GitHub repository, the license and
+  the documentation.
+- **Presentation:** prepared the project presentation for the judges.
+
+**AI assistance:** see "Use of AI" above. Claude (Anthropic) wrote the reference code
+and tests; the decisions, integration, testing and deployment were done by the team
+members listed here.
+
+**Other team members**
+
+**Alonso**
+- **Project direction:** chose the challenge approach (a WiseView-style blink tool for
+  SPHEREx), defined the features and decided what to build and in what order.
+- **Presentation:** prepared the project presentation for the judges.
+- **Communication:** set up the team's WhatsApp group for coordination.
+- **Code review and debugging:** helped analyze the code and track down errors.
+
+**Kevin**
+- **Presentation:** prepared the project presentation for the judges.
+
+**Cristopher**
+- **Presentation:** prepared the project presentation for the judges.
+- **Team registration:** created the team "Equipo Universales" on the
+  NASA Space Apps platform.
+- **Communication:** set up the team's Discord group for coordination.
