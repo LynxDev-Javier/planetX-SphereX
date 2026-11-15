@@ -174,3 +174,18 @@ def test_app_con_datos_reales_simulados(irsa_simulado, tmp_path, monkeypatch):
     assert not at.exception
     assert not at.error
     assert len(irsa_simulado) >= 1
+
+
+def test_app_con_colores_y_descarga_de_gif():
+    from streamlit.testing.v1 import AppTest
+
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    colores = next(c for c in at.checkbox if "colores" in c.label)
+    colores.set_value(True)
+    at.run()
+    assert not at.exception
+    assert not at.error
+    assert not at.exception
+    assert not at.error
+    assert len(irsa_simulado) >= 1
