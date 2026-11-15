@@ -1,4 +1,4 @@
-# LynxScope Planet X and SPHEREx Project (Team Universales)
+# |LynxScope| Planet X and SPHEREx Project (Team Universales)
 
 Web application that animates SPHEREx telescope images of a region of the sky,
 based on given coordinates, to help detect objects that change position.
