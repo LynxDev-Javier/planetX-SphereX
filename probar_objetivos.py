@@ -1,22 +1,4 @@
-"""Prueba LynxScope con los objetivos del reto y guarda los resultados en ./resultados.
 
-Para cada objetivo busca y descarga las imágenes de SPHEREx (o usa las de la carpeta
-cache), las alinea y guarda:
-  - <clave>_normal.gif y <clave>_diferencia.gif : las animaciones
-  - <clave>_candidatos.csv : manchas que sobresalen en cada cuadro (objetos que se mueven)
-  - <clave>_brillo.csv     : brillo en el centro por cuadro (útil para estrellas variables)
-y escribe un resumen en resumen.txt.
-
-Si IRSA no responde, reintenta cada pocos minutos hasta que lo haga:
-
-    python probar_objetivos.py                 # todos los objetivos, reintentando
-    python probar_objetivos.py wise0855 rdra   # solo algunos
-    python probar_objetivos.py --una           # un solo intento por objetivo
-
-Para dejarlo corriendo en el servidor aunque cierres la terminal:
-
-    nohup python probar_objetivos.py > pruebas.log 2>&1 &
-"""
 import argparse
 import os
 import time
