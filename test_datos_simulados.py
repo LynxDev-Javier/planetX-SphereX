@@ -205,3 +205,44 @@ def test_lista_guardada_se_usa_si_irsa_falla(irsa_simulado, monkeypatch):
     # Una región que nunca se consultó sí falla
     with pytest.raises(OSError):
         data.buscar_observaciones(RA + 1, DEC, TAM_DEG, "D2")
+
+
+def test_listar_cache_encuentra_los_recortes_de_la_region(irsa_simulado):
+    obs = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    data.descargar(obs, "cache")
+
+    rutas, fechas = data.listar_cache(RA, DEC, TAM_DEG, "D2", "cache")
+    assert len(rutas) == N
+    assert fechas == sorted(fechas) and fechas[0].startswith("2025-08")
+
+    # Una región lejana no encuentra nada
+    assert data.listar_cache(RA + 1, DEC, TAM_DEG, "D2", "cache") == ([], [])
+    with pytest.raises(ValueError):
+        data.listar_cache(RA, DEC, TAM_DEG, "D9", "cache")
+
+
+def test_listar_cache_filtra_por_banda(irsa_simulado):
+    obs = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    rutas, _ = data.descargar(obs, "cache")
+    for ruta in rutas:  # marca los recortes como detector 1 (D1)
+        with fits.open(ruta, mode="update") as hdul:
+            hdul["IMAGE"].header["DETECTOR"] = 1
+    assert len(data.listar_cache(RA, DEC, TAM_DEG, "D1", "cache")[0]) == N
+    assert data.listar_cache(RA, DEC, TAM_DEG, "D2", "cache")[0] == []
+
+
+def test_app_con_cache_local_no_consulta_a_irsa(irsa_simulado):
+    from streamlit.testing.v1 import AppTest
+
+    obs = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    data.descargar(obs, "cache")
+    consultas_antes = len(irsa_simulado)
+
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    at.slider[0].set_value(TAM_DEG)
+    next(c for c in at.checkbox if "caché local" in c.label).set_value(True)
+    at.run()
+    assert not at.exception
+    assert not at.error
+    assert len(irsa_simulado) == consultas_antes  # no se tocó IRSA
