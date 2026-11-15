@@ -2,7 +2,7 @@ import io
 import numpy as np
 from PIL import Image, ImageDraw
 #convertir cubo de datos numeros a animados , como un gif, este no usa datos sinteticos no quitarxd
-
+# Paleta de colores (negro, morado, magenta, naranja, amarillo claro), sin depender de matplotlib
 _PUNTOS = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
 _COLORES = np.array(
     [[0, 0, 0], [60, 10, 110], [170, 40, 100], [245, 130, 30], [255, 250, 200]], dtype=float
