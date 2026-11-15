@@ -3,7 +3,7 @@
 Web application that animates SPHEREx telescope images of a region of the sky,
 based on given coordinates, to help detect objects that change position.
 
-[Link to the hackathon challenge](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/?tab=details) | **[Try the live web app](AQUÍ_TU_ENLACE)**
+[Link to the hackathon challenge](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/?tab=details)
 
 ## What problem it solves
 
@@ -28,7 +28,9 @@ can spot it, without installing astronomical software.
 
 ## How to use it
 
-1. Enter the coordinates, or leave the example ones (the M101 galaxy).
+You can try the application directly in your browser without installing anything via the **[live demo](https://lynxscope.space)** *(note: hosted permanently, though it may be taken down in the future for security or maintenance reasons; if offline, you can run it locally following the Installation steps below)*:
+
+1. Use IRSA and enter the coordinates, or leave the example ones (the M101 galaxy).
 2. Check "Use real IRSA data" to download the SPHEREx images.
 3. In the "Animation" tab, watch how the region moves; in "Frame by frame", review
    each date.
