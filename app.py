@@ -2,15 +2,14 @@ import streamlit as st
 from fake_data import cubo_sintetico
 from detect import normalizar, imagen_diferencia, encontrar_candidatos
 from animate import generar_cuadros, construir_gif
+
 st.set_page_config(
     page_title="LynxScope | Detección en SPHEREx",
     page_icon="🔭",
     layout="wide"
 )
-st.set_page_config(page_title="Planet X y SPHEREx", layout="wide")
 
 st.title("Objetos en movimiento con imágenes SPHEREx")
-
 with st.sidebar:
     ra = st.number_input("RA (grados)", value=210.80227, format="%.5f")
     dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f")
