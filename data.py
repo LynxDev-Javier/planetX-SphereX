@@ -152,13 +152,14 @@ def descargar(observaciones, carpeta="cache", hilos=6):
     return [r for r, _ in buenas], [f for _, f in buenas]
 
 
-def listar_cache(ra, dec, tam_deg, banda, carpeta="cache"):
+def listar_cache(ra, dec, tam_deg, banda, carpeta="cache", max_obs=None):
     """Busca en `carpeta` los recortes ya descargados que cubren la región y la banda.
 
     Sirve para trabajar sin consultar a IRSA (por ejemplo, si su servicio no responde).
     Un recorte cuenta si su centro está cerca de (ra, dec) y su detector es el de `banda`
     (el número del detector está en el encabezado: 1 = D1, ..., 6 = D6).
     Devuelve (rutas, fechas), ordenadas por fecha; la fecha sale del nombre del archivo.
+    Si hay más de `max_obs` recortes, se eligen repartidos en el tiempo (como en IRSA).
     """
     if banda not in BANDAS:
         raise ValueError(f"banda debe ser una de {BANDAS}")
@@ -181,4 +182,8 @@ def listar_cache(ra, dec, tam_deg, banda, carpeta="cache"):
         nombre = os.path.basename(ruta)
         rutas.append(ruta)
         fechas.append(nombre[:10] if nombre[:4].isdigit() else nombre)
+    if max_obs and len(rutas) > max_obs:
+        elegidos = np.unique(np.linspace(0, len(rutas) - 1, max_obs).round().astype(int))
+        rutas = [rutas[i] for i in elegidos]
+        fechas = [fechas[i] for i in elegidos]
     return rutas, fechas
