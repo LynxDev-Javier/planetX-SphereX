@@ -1,0 +1,38 @@
+[project]
+name = "planetx-spharex"
+version = "0.1.0"
+description = "Herramienta web que anima imágenes de SPHEREx para detectar objetos que cambian de posición"
+readme = "README.md"
+authors = [
+    { name = "alnnu", email = "alnnuu@proton.me" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "astropy>=7",
+    "astroquery>=0.4.11",
+    "numpy>=2",
+    "scipy",
+    "pandas",
+    "pillow",
+    "reproject",
+    "requests",
+    "streamlit",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "python-lsp-ruff>=2.3.4",
+    "matplotlib",
+    "firefly-client>=3.4.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[project.scripts]
+planetx-spharex = "planetx_spharex:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
