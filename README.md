@@ -98,9 +98,6 @@ We used AI as support for the code, as permitted by the organizers.
 - **Code:** Claude wrote reference examples for `animate.py`, `app.py`,
   `catalogs.py`, `detect.py`, `fake_data.py`, and `process.py`, and the versions of `data.py`,
   `process.py`, and the tests we used, based on the official IRSA tutorial.
-  TO DO: what the team wrote on their own and what was changed from those examples.
-- **Review and debugging:** TO DO: what else we used AI for (explaining errors,
-  suggesting tests, improving wording) and what we decided to accept.
-
-TO DO (only if true): all code was reviewed, tested, and understood by the
+ 
+all code was reviewed, tested, and understood by the
 team before including it.
