@@ -70,7 +70,6 @@ cutouts, and verify that they download, align, and detect the moving object.
 - Images: SPHEREx, [IRSA (NASA/IPAC)](https://irsa.ipac.caltech.edu/Missions/spherex.html) archive.
   The query and cutouts follow the
   [official cutouts tutorial](https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts).
-  TO DO: copy here the acknowledgement text requested by IRSA on its page.
 - Known stars: [Gaia DR3](https://archive.stsci.edu/missions-and-data/gaia).
 - Interface reference: [WiseView](http://byw.tools/wiseview).
 
@@ -84,7 +83,6 @@ cutouts, and verify that they download, align, and detect the moving object.
   it still needs to be confirmed with Table 16 of the SPHEREx Explanatory Supplement.
 - The blink is a GIF that is regenerated every time a control is changed, so it takes a little while.
 - Object discovery is a visual aid: candidates must be manually reviewed.
-- TO DO: test with real IRSA data and note here what is found.
 
 ## Use of AI
 
