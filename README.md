@@ -105,8 +105,8 @@ We used AI as support for the code, as permitted by the organizers.
   `catalogs.py`, `detect.py`, `fake_data.py`, and `process.py`, and the versions of `data.py`,
   `process.py`, and the tests we used, based on the official IRSA tutorial.
 
-**Testing:** the integrated modules were tested. The run on real IRSA data of M101 worked,
-with masked pixels and data-free corners.
+- **Planning:** the work plan, stages, and contracts between modules were
+  drafted with Claude (Anthropic); Lynx reviewed and adapted them.
 
 ## Contributions
 
