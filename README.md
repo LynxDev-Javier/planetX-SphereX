@@ -3,7 +3,7 @@
 Web application that animates SPHEREx telescope images of a region of the sky,
 based on given coordinates, to help detect objects that change position.
 
-[Link to the hackathon challenge](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/?tab=details)
+[Link to the hackathon challenge](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/?tab=details) | **[Try the live web app](AQUÍ_TU_ENLACE)**
 
 ## What problem it solves
 
