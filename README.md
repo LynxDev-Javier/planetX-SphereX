@@ -137,7 +137,7 @@ members listed here.
   SPHEREx), defined the features and decided what to build and in what order.
 - **Presentation:** prepared the project presentation for the judges.
 - **Communication:** set up the team's WhatsApp group for coordination.
-- **Code review and debugging:** helped analyze the code and track down errors.
+- **Testing:** helped test the application and report problems.
 
 **Kevin**
 - **Presentation:** prepared the project presentation for the judges.
