@@ -28,17 +28,18 @@ with st.sidebar:
     gaia = st.checkbox("Superponer estrellas de Gaia DR3 (solo datos reales)", value=False)
     colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
     local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
+    max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
 
 reales = reales or local  # la caché local también son datos reales
 
 
 @st.cache_data(show_spinner="Descargando y alineando imágenes...")
-def cargar(ra, dec, tam, banda, reales, local):
+def cargar(ra, dec, tam, banda, reales, local, max_cuadros):
     if reales:
         from process import preparar_cuadros
         if local:
             from data import listar_cache
-            rutas, fechas = listar_cache(ra, dec, tam, banda, "cache")
+            rutas, fechas = listar_cache(ra, dec, tam, banda, "cache", max_obs=max_cuadros)
             if not rutas:
                 raise ValueError(
                     "No hay recortes en la carpeta cache para esa región y banda. "
@@ -46,14 +47,26 @@ def cargar(ra, dec, tam, banda, reales, local):
                 )
         else:
             from data import buscar_observaciones, descargar
-            obs = buscar_observaciones(ra, dec, tam, banda)
+            obs = buscar_observaciones(ra, dec, tam, banda, max_cuadros)
             rutas, fechas = descargar(obs, "cache")
         return preparar_cuadros(rutas, ra, dec, tam, fechas)
     return cubo_sintetico()
 
 
+@st.cache_data(show_spinner="Consultando Gaia DR3...")
+def cargar_gaia(ra, dec, radio):
+    from catalogs import estrellas_gaia
+    return estrellas_gaia(ra, dec, radio)
+
+
+@st.cache_data(show_spinner="Generando la animación...")
+def hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo):
+    cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas, colores)
+    return construir_gif(cuadros, intervalo)
+
+
 try:
-    cubo, fechas = cargar(ra, dec, tam, banda, reales, local)
+    cubo, fechas = cargar(ra, dec, tam, banda, reales, local, max_cuadros)
 except Exception as error:
     st.error(f"No se pudieron cargar los datos: {error}")
     st.stop()
@@ -63,14 +76,17 @@ dif = imagen_diferencia(cubo)
 
 marcas = None
 if gaia and reales:
-    from catalogs import estrellas_gaia, gaia_a_pixeles
+    from catalogs import gaia_a_pixeles
     from process import wcs_comun
-    # radio = mitad de la diagonal de la región, para cubrir también las esquinas
-    marcas = gaia_a_pixeles(estrellas_gaia(ra, dec, tam * 0.71), wcs_comun(ra, dec, cubo.shape[1]))
+    try:
+        # radio = mitad de la diagonal de la región, para cubrir también las esquinas
+        estrellas = cargar_gaia(ra, dec, tam * 0.71)
+        marcas = gaia_a_pixeles(estrellas, wcs_comun(ra, dec, cubo.shape[1]))
+    except Exception as error:
+        st.warning(f"Gaia no respondió; se muestra la imagen sin las estrellas conocidas. ({error})")
 
 vista = dif if modo == "Diferencia" else cubo
-cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas, colores)
-gif = construir_gif(cuadros, intervalo)
+gif = hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo)
 
 tab_anim, tab_cuadro = st.tabs(["Animación", "Cuadro a cuadro"])
 
@@ -79,8 +95,9 @@ with tab_anim:
     st.download_button("Descargar GIF", gif, "animacion.gif", "image/gif")
 
 with tab_cuadro:
-    i = st.slider("Cuadro", 0, len(cuadros) - 1, 0)
-    st.image(cuadros[i], caption=f"Fecha: {fechas[i]}")
+    i = st.slider("Cuadro", 0, len(fechas) - 1, 0)
+    cuadro = generar_cuadros(vista[i:i + 1], vmin, vmax, escala, invertir, marcas, colores)[0]
+    st.image(cuadro, caption=f"Fecha: {fechas[i]}")
 
 cand = encontrar_candidatos(dif)
 st.subheader("Candidatos")
