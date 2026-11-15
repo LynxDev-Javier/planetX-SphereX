@@ -7,6 +7,8 @@ st.set_page_config(
     page_icon="🔭",
     layout="wide"
 )
+st.set_page_config(page_title="Planet X y SPHEREx", layout="wide")
+
 st.title("Objetos en movimiento con imágenes SPHEREx")
 
 with st.sidebar:
@@ -21,6 +23,7 @@ with st.sidebar:
     modo = st.radio("Modo", ["Normal", "Diferencia"])
     reales = st.checkbox("Usar datos reales de IRSA", value=False)
     gaia = st.checkbox("Superponer estrellas de Gaia DR3 (solo datos reales)", value=False)
+    colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
 
 
 @st.cache_data(show_spinner="Descargando y alineando imágenes...")
@@ -51,12 +54,14 @@ if gaia and reales:
     marcas = gaia_a_pixeles(estrellas_gaia(ra, dec, tam * 0.71), wcs_comun(ra, dec, cubo.shape[1]))
 
 vista = dif if modo == "Diferencia" else cubo
-cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas)
+cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas, colores)
+gif = construir_gif(cuadros, intervalo)
 
 tab_anim, tab_cuadro = st.tabs(["Animación", "Cuadro a cuadro"])
 
 with tab_anim:
-    st.image(construir_gif(cuadros, intervalo))
+    st.image(gif)
+    st.download_button("Descargar GIF", gif, "animacion.gif", "image/gif")
 
 with tab_cuadro:
     i = st.slider("Cuadro", 0, len(cuadros) - 1, 0)
