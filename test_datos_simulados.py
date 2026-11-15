@@ -67,7 +67,8 @@ def servidor(tmp_path_factory):
 
 
 @pytest.fixture
-def irsa_simulado(servidor, monkeypatch):
+def irsa_simulado(servidor, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)  # la lista de observaciones se guarda en ./cache
     consultas = []
 
     def query_tap(consulta):
@@ -186,6 +187,21 @@ def test_app_con_colores_y_descarga_de_gif():
     at.run()
     assert not at.exception
     assert not at.error
-    assert not at.exception
-    assert not at.error
-    assert len(irsa_simulado) >= 1
+
+
+def test_lista_guardada_se_usa_si_irsa_falla(irsa_simulado, monkeypatch):
+    primera = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    assert Path("cache").exists()
+
+    def caido(consulta):
+        raise OSError("502 Proxy Error")
+
+    monkeypatch.setattr(data.Irsa, "query_tap", caido)
+    monkeypatch.setattr(data.time, "sleep", lambda s: None)
+    with pytest.warns(UserWarning, match="lista guardada"):
+        segunda = data.buscar_observaciones(RA, DEC, TAM_DEG, "D2")
+    assert segunda == primera
+
+    # Una región que nunca se consultó sí falla
+    with pytest.raises(OSError):
+        data.buscar_observaciones(RA + 1, DEC, TAM_DEG, "D2")
