@@ -5,6 +5,7 @@ IRSA: https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts
 (el código del tutorial tiene licencia BSD-3).
 """
 import concurrent.futures
+import glob
 import hashlib
 import http.client
 import json
@@ -14,8 +15,10 @@ import warnings
 
 import numpy as np
 import requests
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
+from astropy.wcs import WCS
 from astroquery.ipac.irsa import Irsa
 
 BANDAS = ("D1", "D2", "D3", "D4", "D5", "D6")
@@ -147,3 +150,35 @@ def descargar(observaciones, carpeta="cache", hilos=6):
             f"Primer error: {errores[0]}"
         )
     return [r for r, _ in buenas], [f for _, f in buenas]
+
+
+def listar_cache(ra, dec, tam_deg, banda, carpeta="cache"):
+    """Busca en `carpeta` los recortes ya descargados que cubren la región y la banda.
+
+    Sirve para trabajar sin consultar a IRSA (por ejemplo, si su servicio no responde).
+    Un recorte cuenta si su centro está cerca de (ra, dec) y su detector es el de `banda`
+    (el número del detector está en el encabezado: 1 = D1, ..., 6 = D6).
+    Devuelve (rutas, fechas), ordenadas por fecha; la fecha sale del nombre del archivo.
+    """
+    if banda not in BANDAS:
+        raise ValueError(f"banda debe ser una de {BANDAS}")
+    centro = SkyCoord(float(ra), float(dec), unit="deg")
+    tolerancia = 0.25 * float(tam_deg) + 0.01  # grados
+    rutas, fechas = [], []
+    for ruta in sorted(glob.glob(os.path.join(carpeta, "*.fits"))):
+        try:
+            with fits.open(ruta) as hdul:
+                enc = hdul["IMAGE"].header
+                detector = enc.get("DETECTOR")
+                if detector is not None and int(detector) != int(banda[1]):
+                    continue
+                nx, ny = enc["NAXIS1"], enc["NAXIS2"]
+                c = WCS(enc, naxis=2).pixel_to_world(nx / 2, ny / 2)
+        except Exception:
+            continue  # archivo dañado o que no es un recorte de SPHEREx
+        if c.separation(centro).deg > tolerancia:
+            continue
+        nombre = os.path.basename(ruta)
+        rutas.append(ruta)
+        fechas.append(nombre[:10] if nombre[:4].isdigit() else nombre)
+    return rutas, fechas
