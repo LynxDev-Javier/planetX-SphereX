@@ -457,3 +457,24 @@ def test_app_con_coordenadas_en_horas():
     at.text_input(key=f"a_{at.selectbox(key='sistema').value}").set_value("basura")
     at.run()
     assert at.error  # avisa en vez de romperse
+
+
+def test_diagnostico_flags(tmp_path, capsys):
+    import numpy as np
+    from astropy.io import fits
+    import diagnostico_flags
+
+    imagen = np.zeros((20, 20), dtype=np.float32)
+    imagen[10, 10] = 500.0
+    flags = np.zeros((20, 20), dtype=np.int32)
+    flags[10, 10] = 1 << 1          # saturación en el centro de la estrella
+    flags[3, 3] = 1 << 10           # un píxel caliente suelto
+    ruta = tmp_path / "x.fits"
+    fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU(imagen, name="IMAGE"),
+                  fits.ImageHDU(flags, name="FLAGS")]).writeto(ruta)
+    assert diagnostico_flags.bits_activos((1 << 1) | (1 << 21)) == [1, 21]
+    assert diagnostico_flags.main([str(ruta)]) == 0
+    texto = capsys.readouterr().out
+    assert "x=10, y=10" in texto
+    assert "bit 1 (saturación)" in texto and "bit 10 (caliente)" in texto
+    assert "alrededor de ese píxel" in texto and "bit 10" not in texto.split("alrededor")[1]
