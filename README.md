@@ -64,6 +64,9 @@ With uv: `uv sync` and then `uv run streamlit run app.py`.
 | `detect.py` | Normalizes, calculates the difference image, and finds candidates |
 | `catalogs.py` | Gaia DR3 stars and their position in the image |
 | `animate.py` | Converts the image cube into frames and a GIF |
+| `coordenadas.py` | Converts coordinates in several systems (hours, galactic, ecliptic, object name) to ICRS degrees |
+| `regiones.py` | Lists already-downloaded regions and stores the names users give them |
+| `probar_objetivos.py` | Runs the tool on the challenge's test targets and saves the results |
 | `fake_data.py` | Synthetic data to develop and test without internet |
 | `app.py` | Web interface (Streamlit) |
 
@@ -106,13 +109,13 @@ We used AI as support for the code, as permitted by the organizers.
 - **The idea and scope** stem from the official "Planet X and SPHEREx" challenge and WiseView,
   the reference provided by the organizers.
 - **Planning:** the work plan, stages, and contracts between modules were
-  drafted with Claude (Anthropic); the team reviewed and adapted them.
+  drafted with Claude (Anthropic); Lynx reviewed and adapted them.
 - **Code:** Claude wrote reference examples for `animate.py`, `app.py`,
   `catalogs.py`, `detect.py`, `fake_data.py`, and `process.py`, and the versions of `data.py`,
   `process.py`, and the tests we used, based on the official IRSA tutorial.
-
-- **Planning:** the work plan, stages, and contracts between modules were
-  drafted with Claude (Anthropic); Lynx reviewed and adapted them.
+- **Later features** (coordinate systems, saved regions, frame filter, Gaia filtering by
+  magnitude, brightness fields, sidebar layout) were also implemented with Claude's help,
+  from requirements and test results provided by Lynx, who ran them in the app.
 
 ## Contributions
 
@@ -131,8 +134,8 @@ We used AI as support for the code, as permitted by the organizers.
 - **Repository:** created and maintains the GitHub repository, the license and
   the documentation.
 - **Presentation:** prepared the project presentation for the judges.
-- **Feature design and testing:** defined and tested the later features against real
-  IRSA data: selectable coordinate systems (degrees, hours, galactic, ecliptic, object
+- **Feature design and testing:** defined and tested in the running app the later
+  features: selectable coordinate systems (degrees, hours, galactic, ecliptic, object
   name), saved/named regions for the local-cache mode, a filter that discards frames
   with too much missing data, a typeable brightness range, and Gaia star filtering by
   magnitude and circle size.
