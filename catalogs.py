@@ -4,8 +4,13 @@ from astroquery.gaia import Gaia
 
 def estrellas_gaia(ra, dec, radio_deg):
     centro = SkyCoord(ra, dec, unit="deg")
-    job = Gaia.cone_search_async(centro, radius=radio_deg * u.deg)
-    return job.get_results().to_pandas()
+    limite = Gaia.ROW_LIMIT
+    Gaia.ROW_LIMIT = -1  # por defecto astroquery solo devuelve las 50 estrellas más cercanas al centro
+    try:
+        job = Gaia.cone_search_async(centro, radius=radio_deg * u.deg)
+        return job.get_results().to_pandas()
+    finally:
+        Gaia.ROW_LIMIT = limite
 
 def marcar_conocidas(cand, gaia_df, tol_arcsec=6.0):
     c = SkyCoord(cand["ra"].values, cand["dec"].values, unit="deg")
