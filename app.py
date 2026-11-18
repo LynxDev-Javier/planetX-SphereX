@@ -34,6 +34,7 @@ with st.sidebar:
     colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
     local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
     max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
+    max_vacio = st.slider("Descartar cuadros con más de este % sin dato", 0, 100, 40, step=5)
 
     from regiones import etiqueta, guardar_region, listar_regiones
 
@@ -104,6 +105,20 @@ except Exception as error:
     st.error(f"No se pudieron cargar los datos: {error}")
     st.stop()
 
+import numpy as np
+
+vacio = np.isnan(cubo).mean(axis=(1, 2)) * 100
+buenos = np.flatnonzero(vacio <= max_vacio)
+if len(buenos) == 0:
+    st.error(
+        f"Todos los cuadros tienen más de {max_vacio}% sin dato (el más completo tiene "
+        f"{vacio.min():.0f}%). Sube el porcentaje permitido o prueba otras coordenadas."
+    )
+    st.stop()
+descartados = len(cubo) - len(buenos)
+cubo = cubo[buenos]
+fechas = [fechas[i] for i in buenos]
+
 cubo = normalizar(cubo)
 dif = imagen_diferencia(cubo)
 
@@ -120,6 +135,11 @@ if gaia and reales:
 
 vista = dif if modo == "Diferencia" else cubo
 gif = hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo)
+
+st.caption(
+    f"{len(fechas)} cuadros ({descartados} descartados por tener demasiado vacío) · "
+    f"de {fechas[0][:10]} a {fechas[-1][:10]}"
+)
 
 tab_anim, tab_cuadro = st.tabs(["Animación", "Cuadro a cuadro"])
 
