@@ -34,6 +34,8 @@ with st.sidebar:
     colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
     local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
     max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
+    mag_max = st.slider("Gaia: solo estrellas más brillantes que (mag G)", 8.0, 21.0, 16.0, step=0.5)
+    radio_marca = st.slider("Gaia: tamaño de los círculos (píxeles)", 1, 6, 2)
     max_vacio = st.slider("Descartar cuadros con más de este % sin dato", 0, 100, 40, step=5)
 
     from regiones import etiqueta, guardar_region, listar_regiones
@@ -94,8 +96,8 @@ def cargar_gaia(ra, dec, radio):
 
 
 @st.cache_data(show_spinner="Generando la animación...")
-def hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo):
-    cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas, colores)
+def hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo, radio_marca):
+    cuadros = generar_cuadros(vista, vmin, vmax, escala, invertir, marcas, colores, radio_marca)
     return construir_gif(cuadros, intervalo)
 
 
@@ -129,12 +131,15 @@ if gaia and reales:
     try:
         # radio = mitad de la diagonal de la región, para cubrir también las esquinas
         estrellas = cargar_gaia(ra, dec, tam * 0.71)
+        if "phot_g_mean_mag" in estrellas:
+            estrellas = estrellas[estrellas["phot_g_mean_mag"] <= mag_max]  # NaN queda fuera
         marcas = gaia_a_pixeles(estrellas, wcs_comun(ra, dec, cubo.shape[1]))
+        st.caption(f"Gaia: {len(marcas)} estrellas con G ≤ {mag_max:g} en la región")
     except Exception as error:
         st.warning(f"Gaia no respondió; se muestra la imagen sin las estrellas conocidas. ({error})")
 
 vista = dif if modo == "Diferencia" else cubo
-gif = hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo)
+gif = hacer_gif(vista, vmin, vmax, escala, invertir, marcas, colores, intervalo, radio_marca)
 
 st.caption(
     f"{len(fechas)} cuadros ({descartados} descartados por tener demasiado vacío) · "
@@ -149,7 +154,7 @@ with tab_anim:
 
 with tab_cuadro:
     i = st.slider("Cuadro", 0, len(fechas) - 1, 0)
-    cuadro = generar_cuadros(vista[i:i + 1], vmin, vmax, escala, invertir, marcas, colores)[0]
+    cuadro = generar_cuadros(vista[i:i + 1], vmin, vmax, escala, invertir, marcas, colores, radio_marca)[0]
     st.image(cuadro, caption=f"Fecha: {fechas[i]}")
 
 cand = encontrar_candidatos(dif)
