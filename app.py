@@ -15,56 +15,81 @@ st.caption(
 )
 
 with st.sidebar:
-    ra = st.number_input("RA (grados)", value=210.80227, format="%.5f", key="ra")
-    dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f", key="dec")
-    tam = st.slider("Tamaño de la región (grados)", 0.02, 0.5, 0.1, key="tam")
-    banda = st.selectbox("Banda del detector", ["D1", "D2", "D3", "D4", "D5", "D6"], index=1, key="banda")
-    intervalo = st.slider("Intervalo del blink (ms)", 100, 1000, 500, step=50)
-    escala = st.slider("Zoom", 1, 12, 4)
-    col_min, col_max = st.columns(2)
-    vmin = col_min.number_input("Brillo mínimo", value=-2.0, step=1.0)
-    vmax = col_max.number_input("Brillo máximo", value=10.0, step=1.0)
-    if vmax <= vmin:
-        st.warning("El máximo debe ser mayor que el mínimo; se usa mínimo + 1.")
-        vmax = vmin + 1.0
-    invertir = st.checkbox("Invertir valores de píxeles", value=True)
-    modo = st.radio("Modo", ["Normal", "Diferencia"])
-    reales = st.checkbox("Usar datos reales de IRSA", value=False)
-    gaia = st.checkbox("Superponer estrellas de Gaia DR3 (solo datos reales)", value=False)
-    colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
-    local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
-    max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
-    mag_max = st.slider("Gaia: solo estrellas más brillantes que (mag G)", 8.0, 21.0, 16.0, step=0.5)
-    radio_marca = st.slider("Gaia: tamaño de los círculos (píxeles)", 1, 6, 2)
-    max_vacio = st.slider("Descartar cuadros con más de este % sin dato", 0, 100, 40, step=5)
-
+    from coordenadas import SISTEMAS, a_icrs
     from regiones import etiqueta, guardar_region, listar_regiones
 
     def _elegir_region():
         r = st.session_state.get("region_guardada")
         if r:
             st.session_state.update(
-                ra=r["ra"], dec=r["dec"], tam=min(max(r["tam"], 0.02), 0.5), banda=r["banda"]
+                sistema=SISTEMAS[0], ra=r["ra"], dec=r["dec"], tam=min(max(r["tam"], 0.02), 0.5), banda=r["banda"]
             )
 
-    if local:
-        guardadas = listar_regiones("cache")
-        if guardadas:
-            st.selectbox(
-                "Regiones ya descargadas", guardadas, index=None,
-                placeholder="Elige una región...", format_func=etiqueta,
-                key="region_guardada", on_change=_elegir_region,
-            )
+    with st.expander("📍 Región del cielo", expanded=True):
+        sistema = st.selectbox("Tipo de coordenadas", SISTEMAS, key="sistema")
+        if sistema == SISTEMAS[0]:
+            ra = st.number_input("RA (grados)", value=210.80227, format="%.5f", key="ra")
+            dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f", key="dec")
         else:
-            st.caption("Aún no hay regiones guardadas en la caché.")
+            if sistema == SISTEMAS[4]:
+                texto_a, texto_b = st.text_input("Nombre (ej. M101, Barnard's Star)", "M101"), ""
+            else:
+                etiquetas, ejemplos = {
+                    SISTEMAS[1]: (("RA (hh:mm:ss)", "Dec (±dd:mm:ss)"), ("14:03:12.5", "+54:20:56")),
+                    SISTEMAS[2]: (("l (grados)", "b (grados)"), ("102.0", "59.8")),
+                    SISTEMAS[3]: (("Longitud eclíptica", "Latitud eclíptica"), ("170.0", "59.0")),
+                }[sistema]
+                texto_a = st.text_input(etiquetas[0], ejemplos[0], key=f"a_{sistema}")
+                texto_b = st.text_input(etiquetas[1], ejemplos[1], key=f"b_{sistema}")
+            try:
+                ra, dec = a_icrs(sistema, texto_a, texto_b)
+                st.caption(f"= RA {ra:.5f}°, Dec {dec:.5f}° (ICRS)")
+            except ValueError as error:
+                st.error(f"Coordenadas no válidas: {error}")
+                st.stop()
+        tam = st.slider("Tamaño de la región (grados)", 0.02, 0.5, 0.1, key="tam")
+        banda = st.selectbox("Banda del detector", ["D1", "D2", "D3", "D4", "D5", "D6"], index=1, key="banda")
 
-    with st.expander("Guardar esta región con un nombre"):
+    with st.expander("📡 Datos", expanded=True):
+        reales = st.checkbox("Usar datos reales de IRSA", value=False)
+        local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
+        max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
+        max_vacio = st.slider("Descartar cuadros con más de este % sin dato", 0, 100, 40, step=5)
+        if local:
+            guardadas = listar_regiones("cache")
+            if guardadas:
+                st.selectbox(
+                    "Regiones ya descargadas", guardadas, index=None,
+                    placeholder="Elige una región...", format_func=etiqueta,
+                    key="region_guardada", on_change=_elegir_region,
+                )
+            else:
+                st.caption("Aún no hay regiones guardadas en la caché.")
+        st.markdown("**Guardar esta región con un nombre**")
         nombre = st.text_input("Nombre (ej. Estrella de Barnard)", max_chars=40)
         if st.button("Guardar nombre"):
             if guardar_region(nombre, ra, dec, tam, banda, "cache"):
                 st.success("Guardada. Aparecerá en la lista del modo caché.")
             else:
                 st.warning("Escribe un nombre válido (o se llegó al máximo de regiones).")
+
+    with st.expander("🎞️ Animación e imagen", expanded=True):
+        modo = st.radio("Modo", ["Normal", "Diferencia"], horizontal=True)
+        colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
+        invertir = st.checkbox("Invertir valores de píxeles", value=True)
+        intervalo = st.slider("Intervalo del blink (ms)", 100, 1000, 500, step=50)
+        escala = st.slider("Zoom", 1, 12, 4)
+        col_min, col_max = st.columns(2)
+        vmin = col_min.number_input("Brillo mínimo", value=-2.0, step=1.0)
+        vmax = col_max.number_input("Brillo máximo", value=10.0, step=1.0)
+        if vmax <= vmin:
+            st.warning("El máximo debe ser mayor que el mínimo; se usa mínimo + 1.")
+            vmax = vmin + 1.0
+
+    with st.expander("⭐ Estrellas de Gaia", expanded=False):
+        gaia = st.checkbox("Superponer estrellas de Gaia DR3 (solo datos reales)", value=False)
+        mag_max = st.slider("Solo estrellas más brillantes que (mag G)", 8.0, 21.0, 16.0, step=0.5)
+        radio_marca = st.slider("Tamaño de los círculos (píxeles)", 1, 6, 2)
 
 reales = reales or local  # la caché local también son datos reales
 
