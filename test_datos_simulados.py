@@ -4,6 +4,7 @@ Se simula IRSA: un servidor local sirve recortes FITS inventados (con extensione
 FLAGS y VARIANCE) y la consulta TAP se reemplaza por una tabla con esas direcciones.
 """
 import functools
+import os
 import http.server
 import threading
 from pathlib import Path
@@ -340,3 +341,67 @@ def test_app_con_gaia_consulta_una_sola_vez(irsa_simulado, monkeypatch):
     at.run()
     assert not at.exception and not at.error
     assert len(llamadas) == 1
+
+
+def test_gaia_sin_limite_de_filas(monkeypatch):
+    import catalogs
+    visto = {}
+
+    class Job:
+        def get_results(self):
+            import pandas as pd
+            class Tabla:
+                def to_pandas(self):
+                    return pd.DataFrame({"ra": [1.0], "dec": [2.0]})
+            return Tabla()
+
+    def falso(centro, radius):
+        visto["limite"] = catalogs.Gaia.ROW_LIMIT
+        return Job()
+
+    antes = catalogs.Gaia.ROW_LIMIT
+    monkeypatch.setattr(catalogs.Gaia, "cone_search_async", falso)
+    catalogs.estrellas_gaia(10.0, 20.0, 0.1)
+    assert visto["limite"] == -1
+    assert catalogs.Gaia.ROW_LIMIT == antes
+
+
+def test_regiones_guardar_y_listar(tmp_path):
+    import regiones
+    carpeta = str(tmp_path / "cache")
+    os.makedirs(carpeta)
+    open(os.path.join(carpeta, "obs_269.45208_4.69333_0.2400_D1_40.json"), "w").write("[]")
+    assert regiones.guardar_region("  Barnard   </b>  ", 269.45208, 4.69333, 0.24, "D1", carpeta)
+    assert not regiones.guardar_region("   ", 1, 2, 0.1, "D2", carpeta)
+    lista = regiones.listar_regiones(carpeta)
+    assert len(lista) == 1  # la consulta y el nombre son la misma región
+    assert lista[0]["nombre"] == "Barnard </b>"
+    open(os.path.join(carpeta, "obs_10.00000_-5.00000_0.1000_D2_40.json"), "w").write("[]")
+    assert len(regiones.listar_regiones(carpeta)) == 2
+
+
+def test_app_elegir_region_guardada(tmp_path, monkeypatch):
+    import regiones
+    from streamlit.testing.v1 import AppTest
+
+    monkeypatch.chdir(tmp_path)
+    regiones.guardar_region("Barnard", 269.45208, 4.69333, 0.24, "D1", "cache")
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    next(c for c in at.checkbox if "caché local" in c.label).set_value(True)
+    at.run()
+    assert at.selectbox(key="region_guardada") is not None
+    at.selectbox(key="region_guardada").select_index(0)
+    at.run()
+    assert at.session_state["ra"] == 269.45208
+    assert at.session_state["banda"] == "D1"
+
+
+def test_brillo_maximo_alto():
+    from streamlit.testing.v1 import AppTest
+
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    next(n for n in at.number_input if n.label == "Brillo máximo").set_value(1000.0)
+    at.run()
+    assert not at.exception
