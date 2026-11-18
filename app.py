@@ -15,13 +15,18 @@ st.caption(
 )
 
 with st.sidebar:
-    ra = st.number_input("RA (grados)", value=210.80227, format="%.5f")
-    dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f")
-    tam = st.slider("Tamaño de la región (grados)", 0.02, 0.5, 0.1)
-    banda = st.selectbox("Banda del detector", ["D1", "D2", "D3", "D4", "D5", "D6"], index=1)
+    ra = st.number_input("RA (grados)", value=210.80227, format="%.5f", key="ra")
+    dec = st.number_input("Dec (grados)", value=54.34895, format="%.5f", key="dec")
+    tam = st.slider("Tamaño de la región (grados)", 0.02, 0.5, 0.1, key="tam")
+    banda = st.selectbox("Banda del detector", ["D1", "D2", "D3", "D4", "D5", "D6"], index=1, key="banda")
     intervalo = st.slider("Intervalo del blink (ms)", 100, 1000, 500, step=50)
     escala = st.slider("Zoom", 1, 12, 4)
-    vmin, vmax = st.slider("Rango de brillo (min - max)", -10.0, 50.0, (-2.0, 10.0))
+    col_min, col_max = st.columns(2)
+    vmin = col_min.number_input("Brillo mínimo", value=-2.0, step=1.0)
+    vmax = col_max.number_input("Brillo máximo", value=10.0, step=1.0)
+    if vmax <= vmin:
+        st.warning("El máximo debe ser mayor que el mínimo; se usa mínimo + 1.")
+        vmax = vmin + 1.0
     invertir = st.checkbox("Invertir valores de píxeles", value=True)
     modo = st.radio("Modo", ["Normal", "Diferencia"])
     reales = st.checkbox("Usar datos reales de IRSA", value=False)
@@ -29,6 +34,34 @@ with st.sidebar:
     colores = st.checkbox("Usar colores (los píxeles sin dato salen en azul)", value=False)
     local = st.checkbox("Usar solo la caché local (sin consultar a IRSA)", value=False)
     max_cuadros = st.slider("Máximo de cuadros (menos = más rápido)", 5, 100, 40)
+
+    from regiones import etiqueta, guardar_region, listar_regiones
+
+    def _elegir_region():
+        r = st.session_state.get("region_guardada")
+        if r:
+            st.session_state.update(
+                ra=r["ra"], dec=r["dec"], tam=min(max(r["tam"], 0.02), 0.5), banda=r["banda"]
+            )
+
+    if local:
+        guardadas = listar_regiones("cache")
+        if guardadas:
+            st.selectbox(
+                "Regiones ya descargadas", guardadas, index=None,
+                placeholder="Elige una región...", format_func=etiqueta,
+                key="region_guardada", on_change=_elegir_region,
+            )
+        else:
+            st.caption("Aún no hay regiones guardadas en la caché.")
+
+    with st.expander("Guardar esta región con un nombre"):
+        nombre = st.text_input("Nombre (ej. Estrella de Barnard)", max_chars=40)
+        if st.button("Guardar nombre"):
+            if guardar_region(nombre, ra, dec, tam, banda, "cache"):
+                st.success("Guardada. Aparecerá en la lista del modo caché.")
+            else:
+                st.warning("Escribe un nombre válido (o se llegó al máximo de regiones).")
 
 reales = reales or local  # la caché local también son datos reales
 
