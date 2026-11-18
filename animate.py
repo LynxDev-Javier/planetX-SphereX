@@ -16,8 +16,8 @@ def _a_color(n):
     return np.stack(canales, axis=-1).astype(np.uint8)
 
 
-def generar_cuadros(cubo, vmin=-2, vmax=10, escala=4, invertir=False, marcas=None, colores=False):
-    """marcas: lista de (x, y) en píxeles del cubo; se dibujan como círculos.
+def generar_cuadros(cubo, vmin=-2, vmax=10, escala=4, invertir=False, marcas=None, colores=False, radio_marca=3):
+    """marcas: lista de (x, y) en píxeles del cubo; se dibujan como círculos de radio_marca píxeles.
 
     La imagen se dibuja con el norte arriba y el este a la izquierda: la fila 0 del cubo
     es el sur (la declinación crece con la fila), así que se voltea al dibujar.
@@ -42,7 +42,7 @@ def generar_cuadros(cubo, vmin=-2, vmax=10, escala=4, invertir=False, marcas=Non
         im = im.resize((im.width * escala, im.height * escala), Image.NEAREST)
         if marcas:
             d = ImageDraw.Draw(im)
-            r = 3 * escala
+            r = radio_marca * escala
             color_marca = (0, 255, 255) if colores else (255, 0, 0)
             for x, y in marcas:
                 cx, cy = (x + 0.5) * escala, (alto - y - 0.5) * escala
