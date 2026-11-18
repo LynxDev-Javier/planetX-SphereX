@@ -405,3 +405,13 @@ def test_brillo_maximo_alto():
     next(n for n in at.number_input if n.label == "Brillo máximo").set_value(1000.0)
     at.run()
     assert not at.exception
+
+
+def test_app_filtro_de_cuadros_vacios():
+    from streamlit.testing.v1 import AppTest
+
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    next(s for s in at.slider if "sin dato" in s.label).set_value(0)
+    at.run()
+    assert not at.exception
