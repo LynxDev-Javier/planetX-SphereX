@@ -415,3 +415,13 @@ def test_app_filtro_de_cuadros_vacios():
     next(s for s in at.slider if "sin dato" in s.label).set_value(0)
     at.run()
     assert not at.exception
+
+
+def test_marcas_con_radio_distinto():
+    import numpy as np
+    from animate import generar_cuadros
+    cubo = np.zeros((1, 20, 20))
+    chico = generar_cuadros(cubo, marcas=[(10, 10)], radio_marca=1)[0]
+    grande = generar_cuadros(cubo, marcas=[(10, 10)], radio_marca=5)[0]
+    rojos = lambda im: int((np.array(im)[:, :, 0] == 255).sum())
+    assert rojos(grande) > rojos(chico) > 0
