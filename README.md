@@ -16,17 +16,23 @@ can spot it, without installing astronomical software.
 
 ## Features
 
-- Choose a region of the sky by RA and Dec (in degrees) and its size.
+- Choose a region of the sky and its size. Coordinates can be entered as ICRS degrees,
+  ICRS hours (hh:mm:ss), galactic, ecliptic, or an object name (SIMBAD).
 - Choose the SPHEREx detector band (D1 to D6).
 - Image animation in chronological order, with blink interval, zoom,
-  brightness range, and pixel value inversion.
+  a typeable brightness range (minimum and maximum), and pixel value inversion.
 - Frame-by-frame view with the date and wavelength of each image.
 - "Difference" mode: subtracts static elements so only what changes stands out.
 - Colour mode (pixels with no data are shown in blue) and GIF download.
+- Frame filter: discards frames with too much missing data (for example when the region
+  is near the edge of an exposure).
 - Candidate list (position per frame) exportable to CSV.
-- Overlay of known Gaia DR3 stars (with real data).
+- Overlay of known Gaia DR3 stars (with real data), filtered by magnitude, with
+  adjustable circle size.
 - Local-cache mode: works with images already downloaded, without querying IRSA.
+- Saved regions: give a region a name and pick it again later in local-cache mode.
 - Demo mode with synthetic data, without an internet connection.
+- Sidebar organised in sections (Region, Data, Animation, Gaia).
 
 ## How to use it
 
@@ -125,6 +131,15 @@ We used AI as support for the code, as permitted by the organizers.
 - **Repository:** created and maintains the GitHub repository, the license and
   the documentation.
 - **Presentation:** prepared the project presentation for the judges.
+- **Feature design and testing:** defined and tested the later features against real
+  IRSA data: selectable coordinate systems (degrees, hours, galactic, ecliptic, object
+  name), saved/named regions for the local-cache mode, a filter that discards frames
+  with too much missing data, a typeable brightness range, and Gaia star filtering by
+  magnitude and circle size.
+- **Diagnosis:** found that the Gaia overlay showed too many stars and that some frames
+  came out half empty, and asked for the fixes.
+- **Security and operations:** ran the server with key-only SSH access behind a
+  Cloudflare Tunnel and reviewed the risks of exposing the app publicly.
 
 **AI assistance:** see "Use of AI" above. Claude (Anthropic) wrote the reference code
 and tests; the decisions, integration, testing and deployment were done by the team
