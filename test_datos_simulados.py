@@ -171,7 +171,7 @@ def test_app_con_datos_reales_simulados(irsa_simulado, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # la app guarda la caché en ./cache
     at = AppTest.from_file(str(app), default_timeout=60).run()
     at.slider[0].set_value(TAM_DEG)
-    at.checkbox[1].set_value(True)  # "Usar datos reales de IRSA"
+    next(c for c in at.checkbox if "datos reales" in c.label).set_value(True)
     at.run()
     assert not at.exception
     assert not at.error
@@ -337,7 +337,7 @@ def test_app_con_gaia_consulta_una_sola_vez(irsa_simulado, monkeypatch):
     at = _app_con_cache_local_y_gaia(irsa_simulado)
     at.run()
     assert not at.exception and not at.error and not at.warning
-    at.slider[1].set_value(300)  # cambiar un control no debe volver a consultar a Gaia
+    next(s for s in at.slider if s.label.startswith("Intervalo")).set_value(300)  # cambiar un control no debe volver a consultar a Gaia
     at.run()
     assert not at.exception and not at.error
     assert len(llamadas) == 1
@@ -425,3 +425,35 @@ def test_marcas_con_radio_distinto():
     grande = generar_cuadros(cubo, marcas=[(10, 10)], radio_marca=5)[0]
     rojos = lambda im: int((np.array(im)[:, :, 0] == 255).sum())
     assert rojos(grande) > rojos(chico) > 0
+
+
+def test_coordenadas_en_distintos_sistemas(monkeypatch):
+    import coordenadas as c
+    ra, dec = c.a_icrs(c.SISTEMAS[0], "210,8", "54.3")
+    assert (ra, dec) == (210.8, 54.3)
+    ra, dec = c.a_icrs(c.SISTEMAS[1], "14:03:12.5", "+54:20:56")
+    assert abs(ra - 210.802) < 0.001 and abs(dec - 54.349) < 0.001
+    ra, dec = c.a_icrs(c.SISTEMAS[2], "102.037", "59.771")  # M101 en galácticas
+    assert abs(ra - 210.8) < 0.1 and abs(dec - 54.35) < 0.1
+    ra, dec = c.a_icrs(c.SISTEMAS[3], "170", "59")
+    assert 0 <= ra < 360 and -90 <= dec <= 90
+    for malo in (("abc", "1"), ("1", "99")):
+        with pytest.raises(ValueError):
+            c.a_icrs(c.SISTEMAS[0], *malo)
+    monkeypatch.setattr(c.SkyCoord, "from_name", staticmethod(lambda n: c.SkyCoord(10 * c.u.deg, 20 * c.u.deg)))
+    assert c.a_icrs(c.SISTEMAS[4], "lo que sea") == (10.0, 20.0)
+    with pytest.raises(ValueError):
+        c.a_icrs(c.SISTEMAS[4], "  ")
+
+
+def test_app_con_coordenadas_en_horas():
+    from streamlit.testing.v1 import AppTest
+
+    app = Path(__file__).parent / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=60).run()
+    at.selectbox(key="sistema").select_index(1)
+    at.run()
+    assert not at.exception and not at.error
+    at.text_input(key=f"a_{at.selectbox(key='sistema').value}").set_value("basura")
+    at.run()
+    assert at.error  # avisa en vez de romperse
